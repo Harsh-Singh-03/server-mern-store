@@ -14,6 +14,18 @@ const userSchema = new mongoose.Schema({
     unique: true,
     validate: [validator.isEmail, "Please Enter a valid Email"],
   },
+  about: {
+    type: String
+  },
+  fb: {
+    type: String
+  },
+  ig: {
+    type: String
+  },
+  tw: {
+    type: String
+  },
   password: {
     type: String,
     required: [true, "Please Enter Your Password"],
@@ -52,13 +64,14 @@ const userSchema = new mongoose.Schema({
   },
   Addresses: [
     {
+      addressId : {type: String, required: true},
       houseName: {type: String, default: "Optional"},
       street: { type: String, required: true },
       city: { type: String, required: true },
       state: { type: String, required: true },
       zip: { type: String, required: true },
       country: { type: String, required: true },
-      default: {type: Boolean, default: false}
+      isDefault: {type: Boolean, default: false}
     }
   ]
 });

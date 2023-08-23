@@ -191,11 +191,12 @@ route.post('/add-user-address',fetchUser, AsyncError(async (req, res, next)=>{
     if(user.Addresses.length > 6){
         return next(new ErrorHandler("You can add only 6 addressess", 400))
     }
-    if(req.body.default === true && user.Addresses.length > 0){
+    if(req.body.isDefault === true && user.Addresses.length > 0){
         user.Addresses.forEach(add =>{
-            add.default = false
+            add.isDefault = false
         })
     }
+    req.body.addressId = id + `${user.Addresses.length}`
     user.Addresses.push(req.body)
     const data = await user.save()
     res.status(200).json({
@@ -208,16 +209,16 @@ route.post('/add-user-address',fetchUser, AsyncError(async (req, res, next)=>{
 route.post('/update-address',fetchUser, AsyncError(async (req, res, next)=>{
     const {id} = req.user
     const user = await User.findById(id)
-    const {street, country, city, state, houseName, zip, default1} = req.body
+    const {street, country, city, state, houseName, zip, isDefault} = req.body
     if(!user){return next(new ErrorHandler("Bad request", 400))}
     const isAddress = user.Addresses.find(
-        (add) => add._id.toString() === req.body.id.toString()
+        (add) => add.addressId === req.body.addressId
     );
     if (isAddress) {
         user.Addresses.forEach((add) => {
-            add.default = false
-            if (add._id.toString() === req.body.id.toString())
-            (add.state = state), (add.street = street), (add.city = city),(add.country = country), (add.houseName = houseName), (add.zip = zip), (add.default = default1);
+            add.isDefault = false
+            if (add.addressId === req.body.addressId)
+            (add.state = state), (add.street = street), (add.city = city),(add.country = country), (add.houseName = houseName), (add.zip = zip), (add.isDefault = isDefault);
         });
     }else{
         return (next(new ErrorHandler("Address not found", 404)))
@@ -247,22 +248,22 @@ route.post('/delete-address',fetchUser, AsyncError(async (req, res, next)=>{
     const user = await User.findById(id)
     if(!user){return next(new ErrorHandler("Bad request", 400))}
     const isAddress = user.Addresses.find(
-        (add) => add._id.toString() === req.body.id.toString()
+        (add) => add.addressId === req.body.id
     );
     if(!isAddress){return next(new ErrorHandler("Address not found", 404))}
-    const Addresses = user.Addresses.filter(
-        (add) => add._id.toString() !== req.body.id.toString()
-    );
-    await User.findByIdAndUpdate(id,{Addresses});
+    let Addresses = user.Addresses.filter(add => add.addressId !== req.body.id);
+    if(req.body.isDefault === true && Addresses.length >= 1){
+        Addresses[0].isDefault = true
+    }
+    await User.findByIdAndUpdate(id, {Addresses})
     res.status(200).json({
         success: true,
-        data: Addresses,
-        message: "Deleted"
+        message: "Address Deleted"
     })
 }))
 // Update profile photo
-route.post('/update-profile-photo',upload.single("file"), AsyncError(async (req, res, next)=>{
-    const user = await User.findById(req.body.id);// will comes with fetch user 
+route.post('/update-profile-photo',fetchUser, upload.single("file"), AsyncError(async (req, res, next)=>{
+    const user = await User.findById(req.user.id);// will comes with fetch user 
     if(!user) return next(new ErrorHandler('Bad Request', 400));
     const data = await cloudinary.uploader.destroy(user.avatar.public_id)
     const result = await cloudinary.uploader.upload(req.file.path); //TODO If result is not ok then will send mail info about image not deleted!
@@ -272,19 +273,21 @@ route.post('/update-profile-photo',upload.single("file"), AsyncError(async (req,
         }
     user.avatar = updateAvatar;
     await user.save()
-    res.status(200).send({success: true, data, user, result})  
+    res.status(200).send({success: true, data, message: "Avatar Updated Successfully!"})  
 }))
 //Update profile dtetails (name / email)
-route.post('/update-profile', AsyncError(async (req, res, next)=>{
+route.post('/update-profile',fetchUser, AsyncError(async (req, res, next)=>{
     if(req.body.email){
-        const check = await User.findOne({email: req.body.email})
-        if(check) return next(new ErrorHandler('Email already Exist', 400))
-        req.body.EmailVerificationToken = ''
-        req.body.emailVerification = false
+        if(req.body.email !== req.user.email){
+            const check = await User.findOne({email: req.body.email})
+            if(check) return next(new ErrorHandler('Email already Exist', 400))
+            req.body.EmailVerificationToken = ''
+            req.body.emailVerification = false
+        }
     }
-    await User.findByIdAndUpdate(req.query.id, req.body)
-    const updateUser = await User.findById(req.query.id)
-    res.status(200).send({success: true, updateUser})  
+    await User.findByIdAndUpdate(req.user.id, req.body)
+    const updateUser = await User.findById(req.user.id)
+    res.status(200).send({success: true, updateUser, message: 'Profile Updated Successfully !'})  
 }))
 // Profile page setup like order histry updating profile address cart an all
 module.exports = route
