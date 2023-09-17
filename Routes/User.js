@@ -106,7 +106,7 @@ route.post('/request-email-verification', AsyncError(async (req, res, next) => {
     const token = crypto.randomBytes(32).toString("hex")
     const newUserData = { EmailVerificationToken: token }
     await User.findByIdAndUpdate(user.id, newUserData, {new: true});
-    const url = `${process.env.Verify_Url}/${user.id}/${token}`
+    const url = `${process.env.CLIENT_URL}/profile/verify-email/${user.id}/${token}`
     let Text = `<h1>Hello ${user.name}</h1>
                 <p>Please verify your email</p>
                 <a href=${url} target="_blank">Click Here To Verify</a>`
@@ -124,6 +124,9 @@ route.post('/verify-email', AsyncError(async (req, res, next) => {
     let user = await User.findOne({ _id: id, EmailVerificationToken: token })
     if (!user) {
         return next(new ErrorHandler("Invalid Token", 400))
+    }
+    if(user.emailVerification === true){
+        return next(new ErrorHandler("Email Already Verified", 201))
     }
     const newUserData = { emailVerification: true }
     const data = await User.findByIdAndUpdate(user.id, newUserData, {new: true});
@@ -154,7 +157,7 @@ route.post('/reset-pass-request', AsyncError(async (req, res, next) => {
     const token = crypto.randomBytes(32).toString("hex")
     const newUserData = { resetPasswordToken: token }
     await User.findByIdAndUpdate(user._id, newUserData, {new: true})
-    const url = `${process.env.Verify_Url}/${user._id}/${token}`
+    const url = `${process.env.CLIENT_URL}/reset-pass/${user._id}/${token}`
     const mailBody = `<h1>Hello ${user.name}</h1>
                       <p>As per your request here is your reset password url</p>
                       <a href=${url} target="_blank">Reset Pass</a>`
@@ -162,10 +165,10 @@ route.post('/reset-pass-request', AsyncError(async (req, res, next) => {
     res.status(200).json({success: true, message: "Email Sent"})
 }))
 route.post('/reset-pass', AsyncError(async (req, res, next)=>{
-    const { password, confirmPassword, id, token } = req.body
-    if(password !== confirmPassword){
-        return next(new ErrorHandler("Password not matched", 400))
-    }
+    const { password, id, token } = req.body
+    // if(password !== confirmPassword){
+    //     return next(new ErrorHandler("Password not matched", 400))
+    // }
     if(password.length < 8){
         return next(new ErrorHandler("Password must be greater than 8 character", 400))
     }

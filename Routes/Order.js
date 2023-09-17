@@ -50,11 +50,12 @@ route.post('/placed-order', AsyncError(async (req, res, next) =>{
 route.get('/get-order',AsyncError(async (req, res, next) =>{
     const OrderData = await Order.findById(req.query.id)
     if(!OrderData) return next(new ErrorHandler("Bad Request", 400))
+
     res.status(200).send({success: true, OrderData})
 }))
 // Get all orders of a particuler customer 
 route.get('/get-customer-orders',AsyncError(async (req, res, next) =>{
-    const OrderData =  await Order.find({userId: req.query.id })
+    const OrderData =  await Order.find({userId: req.query.id, orderStatus: "placed" })
     if(!OrderData) return next(new ErrorHandler("Bad Request", 400))
     res.status(200).send({success: true, OrderData})
 }))
