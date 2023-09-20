@@ -127,7 +127,7 @@ route.post('/add-product-review', fetchUser, AsyncError(async (req, res, next) =
     });
     product.ratings = (avg / product.reviews.length).toFixed(1);
     await product.save()
-    res.status(200).json({ success: true, data: review, message: "Review Added" })
+    res.status(200).json({ success: true, message: "Review Added" })
 }))
 // Get all review
 route.post('/get-reviews', AsyncError(async (req, res, next) => {
@@ -158,7 +158,7 @@ route.post('/update-review', fetchUser, AsyncError(async (req, res, next) => {
     });
     product.ratings = avg / product.reviews.length;
     await product.save()
-    res.status(200).json({ success: true, data: product.reviews, message: "review update" })
+    res.status(200).json({ success: true, message: "review update" })
 }))
 // Delete review
 route.post('/delete-review', fetchUser, AsyncError(async (req, res, next) => {
