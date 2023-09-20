@@ -34,6 +34,9 @@ route.post('/get-all-product-test', AsyncError(async (req, res, next) => {
     res.status(200).json({ success: true, topOffers, Mobile, Fashion, Electronics, Home, Appliances, twoWheelers, Grocery })
 }))
 route.post('/get-price-brand', AsyncError(async (req, res, next) => {
+    if(!req.body.category){
+      return next(new ErrorHandler("Bad Request", 200))  
+    }
     const Brand = await Product.distinct('brand', { category: req.body.category })
     const Price = await Product.aggregate([{ $match: { category: req.body.category } }, { $group: { _id: null, maxPrice: { $max: '$price' } } }])
     res.status(200).json({ success: true, maxPrice: Price[0].maxPrice, Brand })
@@ -57,7 +60,7 @@ route.get('/product-filter', AsyncError(async (req, res, next) => {
         queryStr = queryStr.replace(/\b(gt|gte|lt|lte)\b/g, (key) => `$${key}`);
         productsCount = await Product.countDocuments(JSON.parse(queryStr));
     } else {
-        productsCount = await Product.countDocuments();
+        productsCount = await Product.countDocuments(req.query);
     }
     const apiFeature = new ApiFeatures(Product.find(), req.query)
         .search()
